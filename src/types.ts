@@ -12,6 +12,7 @@ export interface BarcodeState {
   textAlign: 'left' | 'center' | 'right';
   textXOffset?: number;
   textYOffset?: number;
+  textSpacing?: number;
   barColor: string;
   backgroundColor: string;
   isTransparent: boolean;
@@ -33,6 +34,7 @@ export interface PackageLabelState {
   qrPayload: string;
   font: string;
   scale: number;
+  textSpacing?: number;
   backgroundColor: string;
   barColor: string;
   isTransparent: boolean;

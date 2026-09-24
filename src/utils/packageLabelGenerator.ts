@@ -1,5 +1,6 @@
 import bwipjs from 'bwip-js';
 import { PackageLabelState } from '../types';
+import { renderToCanvas, renderToSvg } from './barcodeGenerator';
 
 export const DEFAULT_PIXEL_LABEL: PackageLabelState = {
   modelName: 'Google Pixel 7a (128GB, Charcoal)',
@@ -12,6 +13,7 @@ export const DEFAULT_PIXEL_LABEL: PackageLabelState = {
   qrPayload: 'GA03694-GB;354487208189804;354487208189812;89033023427100000000027633036749',
   font: 'DM Sans',
   scale: 3, // High DPI for crisp printing
+  textSpacing: 0.8,
   backgroundColor: '#ffffff',
   barColor: '#000000',
   isTransparent: false,
@@ -56,14 +58,15 @@ export function generatePackageLabelSvg(state: PackageLabelState): string {
   // 1. EAN-13 (Top-Left)
   let eanSvgStr = '';
   try {
-    eanSvgStr = bwipjs.toSVG({
+    eanSvgStr = renderToSvg({
       bcid: 'ean13',
       text: state.ean.replace(/\D/g, '').padEnd(12, '0').slice(0, 13),
       includetext: true,
       textfont: bwipFont,
       textsize: 8.5,
       scale: 2,
-      height: 14,
+      height: 12,
+      textspacing: state.textSpacing || 0.8,
       barcolor: barColor.replace('#', ''),
     });
   } catch (e) {
@@ -241,14 +244,15 @@ export function renderPackageLabelToCanvas(
   // 1. EAN-13
   const eanCanvas = document.createElement('canvas');
   try {
-    bwipjs.toCanvas(eanCanvas, {
+    renderToCanvas(eanCanvas, {
       bcid: 'ean13',
       text: state.ean.replace(/\D/g, '').padEnd(12, '0').slice(0, 13),
       includetext: true,
       textfont: bwipFont,
       textsize: 8.5,
       scale: 2,
-      height: 14,
+      height: 12,
+      textspacing: state.textSpacing || 0.8,
       barcolor: barColor.replace('#', ''),
     });
     ctx.drawImage(eanCanvas, 22, 20, 290, 84);

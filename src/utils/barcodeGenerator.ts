@@ -14,6 +14,7 @@ export interface BarcodeRenderOptions {
   textxalign?: 'left' | 'center' | 'right';
   textxoffset?: number;
   textyoffset?: number;
+  textspacing?: number;
   barcolor?: string;
   backgroundcolor?: string | null;
   rotate?: 'N' | 'R' | 'L' | 'I';
@@ -128,8 +129,110 @@ export function buildBwipOptions(options: BarcodeRenderOptions): any {
   return bwipOpts;
 }
 
+export function drawTextWithTracking(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  spacing: number,
+  align: 'left' | 'center' | 'right'
+) {
+  if (!spacing) {
+    ctx.textAlign = align;
+    ctx.fillText(text, x, y);
+    return;
+  }
+  const anyCtx = ctx as any;
+  if ('letterSpacing' in anyCtx) {
+    anyCtx.letterSpacing = `${spacing}px`;
+    ctx.textAlign = align;
+    ctx.fillText(text, x, y);
+    anyCtx.letterSpacing = '0px';
+    return;
+  }
+  let totalWidth = 0;
+  const widths: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    const w = ctx.measureText(text[i]).width;
+    widths.push(w);
+    totalWidth += w + (i < text.length - 1 ? spacing : 0);
+  }
+  let curX = x;
+  if (align === 'center') curX = x - totalWidth / 2;
+  else if (align === 'right') curX = x - totalWidth;
+  for (let i = 0; i < text.length; i++) {
+    ctx.textAlign = 'left';
+    ctx.fillText(text[i], curX, y);
+    curX += widths[i] + spacing;
+  }
+}
+
+function renderUnifiedEanCanvasText(
+  ctx: CanvasRenderingContext2D,
+  options: BarcodeRenderOptions,
+  textCalls: Array<[number, number, string, string, any]>,
+  resolvedFont: string
+) {
+  const scale = options.scale || 3;
+  const isDmSans = resolvedFont === 'DMSANS';
+  const fontFamily = isDmSans
+    ? '"DM Sans", -apple-system, sans-serif'
+    : resolvedFont === 'OCR-B'
+    ? '"OCR-B", monospace'
+    : 'sans-serif';
+  const fontWeight = isDmSans ? '700' : 'normal';
+  const fontSizePx = Math.round(scale * (options.textsize || 8.5) * 1.05);
+  ctx.font = `${fontWeight} ${fontSizePx}px ${fontFamily}`;
+  ctx.fillStyle = options.barcolor || '#000000';
+
+  const xOffset = options.textxoffset || 0;
+  const yOffset = options.textyoffset || 0;
+  const spacing = (options.textspacing || 0) * (scale / 3);
+
+  if (textCalls.length === 13) {
+    // EAN-13: 1 outside lead digit + 6 in left pocket + 6 in right pocket
+    const leadChar = textCalls[0][2];
+    const leadX = textCalls[0][0] + xOffset;
+    const baselineY = textCalls[0][1] - yOffset;
+
+    const leftStr = textCalls.slice(1, 7).map((t) => t[2]).join('');
+    const leftCenterX = (textCalls[1][0] + textCalls[6][0]) / 2 + xOffset;
+
+    const rightStr = textCalls.slice(7, 13).map((t) => t[2]).join('');
+    const rightCenterX = (textCalls[7][0] + textCalls[12][0]) / 2 + xOffset;
+
+    drawTextWithTracking(ctx, leadChar, leadX, baselineY, 0, 'center');
+    drawTextWithTracking(ctx, leftStr, leftCenterX, baselineY, spacing, 'center');
+    drawTextWithTracking(ctx, rightStr, rightCenterX, baselineY, spacing, 'center');
+  } else if (textCalls.length === 12) {
+    // UPC-A: 1 outside lead + 5 left pocket + 5 right pocket + 1 outside check digit
+    const leadChar = textCalls[0][2];
+    const leadX = textCalls[0][0] + xOffset;
+    const baselineY = textCalls[0][1] - yOffset;
+
+    const leftStr = textCalls.slice(1, 6).map((t) => t[2]).join('');
+    const leftCenterX = (textCalls[1][0] + textCalls[5][0]) / 2 + xOffset;
+
+    const rightStr = textCalls.slice(6, 11).map((t) => t[2]).join('');
+    const rightCenterX = (textCalls[6][0] + textCalls[10][0]) / 2 + xOffset;
+
+    const checkChar = textCalls[11][2];
+    const checkX = textCalls[11][0] + xOffset;
+
+    drawTextWithTracking(ctx, leadChar, leadX, baselineY, 0, 'center');
+    drawTextWithTracking(ctx, leftStr, leftCenterX, baselineY, spacing, 'center');
+    drawTextWithTracking(ctx, rightStr, rightCenterX, baselineY, spacing, 'center');
+    drawTextWithTracking(ctx, checkChar, checkX, baselineY, 0, 'center');
+  } else {
+    // Fallback: draw all textCalls with tracking
+    for (const call of textCalls) {
+      drawTextWithTracking(ctx, call[2], call[0] + xOffset, call[1] - yOffset, spacing, 'center');
+    }
+  }
+}
+
 /**
- * Renders a barcode to an existing HTMLCanvasElement.
+ * Renders a barcode to an existing HTMLCanvasElement with unified pocket typography and text spacing.
  */
 export function renderToCanvas(
   canvas: HTMLCanvasElement,
@@ -141,6 +244,13 @@ export function renderToCanvas(
   }
 
   const isEan = isEanUpcSymbology(options.bcid);
+  const resolvedFont = resolveFont(options.textfont, options.bcid);
+  const isCustomPocketOrSpacing = options.includetext && (
+    resolvedFont === 'DMSANS' || 
+    (typeof options.textspacing === 'number' && options.textspacing !== 0) ||
+    isEan
+  );
+
   if (!options.includetext && isEan) {
     // Preserve authentic ISO/GS1 guard bars & pockets without drawing numbers
     const drawing = (bwipjs as any).drawingCanvas(canvas);
@@ -150,6 +260,24 @@ export function renderToCanvas(
       includetext: true,
     });
     bwipjs.render(bwipOptions, drawing);
+    if (typeof drawing.end === 'function') drawing.end();
+  } else if (isCustomPocketOrSpacing && isEan) {
+    // Intercept monospaced fixed-slot text to render cohesive grouped pocket numbers
+    const textCalls: Array<[number, number, string, string, any]> = [];
+    const drawing = (bwipjs as any).drawingCanvas(canvas);
+    drawing.text = function(...args: any[]) {
+      textCalls.push(args as any);
+    };
+    const bwipOptions = buildBwipOptions({
+      ...options,
+      includetext: true,
+    });
+    bwipjs.render(bwipOptions, drawing);
+    if (typeof drawing.end === 'function') drawing.end();
+
+    if (ctx && textCalls.length > 0) {
+      renderUnifiedEanCanvasText(ctx, options, textCalls, resolvedFont);
+    }
   } else {
     const bwipOptions = buildBwipOptions(options);
     bwipjs.toCanvas(canvas, bwipOptions);
@@ -161,6 +289,13 @@ export function renderToCanvas(
  */
 export function renderToSvg(options: BarcodeRenderOptions): string {
   const isEan = isEanUpcSymbology(options.bcid);
+  const resolvedFont = resolveFont(options.textfont, options.bcid);
+  const isCustomPocketOrSpacing = options.includetext && (
+    resolvedFont === 'DMSANS' || 
+    (typeof options.textspacing === 'number' && options.textspacing !== 0) ||
+    isEan
+  );
+
   let rawSvg: string;
 
   if (!options.includetext && isEan) {
@@ -173,6 +308,94 @@ export function renderToSvg(options: BarcodeRenderOptions): string {
     });
     bwipjs.render(bwipOptions, drawing);
     rawSvg = drawing.end();
+  } else if (isCustomPocketOrSpacing && isEan) {
+    const textCalls: Array<[number, number, string, string, any]> = [];
+    const drawing = (bwipjs as any).drawingSVG();
+    drawing.text = function(...args: any[]) {
+      textCalls.push(args as any);
+    };
+    const bwipOptions = buildBwipOptions({
+      ...options,
+      includetext: true,
+    });
+    bwipjs.render(bwipOptions, drawing);
+    rawSvg = drawing.end();
+
+    if (textCalls.length > 0) {
+      const scale = options.scale || 3;
+      const isDmSans = resolvedFont === 'DMSANS';
+      const fontFamily = isDmSans
+        ? "'DM Sans', -apple-system, sans-serif"
+        : resolvedFont === 'OCR-B'
+        ? "'OCR-B', monospace"
+        : 'sans-serif';
+      const fontWeight = isDmSans ? '700' : 'normal';
+      const fontSizePx = Math.round(scale * (options.textsize || 8.5) * 1.05);
+      const barColor = options.barcolor ? `#${cleanHex(options.barcolor)}` : '#000000';
+      const xOffset = options.textxoffset || 0;
+      const yOffset = options.textyoffset || 0;
+      const spacingPx = ((options.textspacing || 0) * (scale / 3)).toFixed(2);
+
+      let textSvgNodes = '';
+      if (textCalls.length === 13) {
+        // EAN-13
+        const leadChar = textCalls[0][2];
+        const leadX = (textCalls[0][0] + xOffset).toFixed(2);
+        const baselineY = (textCalls[0][1] - yOffset).toFixed(2);
+        const leftStr = textCalls.slice(1, 7).map((t) => t[2]).join('');
+        const leftCenterX = ((textCalls[1][0] + textCalls[6][0]) / 2 + xOffset).toFixed(2);
+        const rightStr = textCalls.slice(7, 13).map((t) => t[2]).join('');
+        const rightCenterX = ((textCalls[7][0] + textCalls[12][0]) / 2 + xOffset).toFixed(2);
+
+        textSvgNodes = `
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&amp;display=swap');
+      .svg-barcode-num {
+        font-family: ${fontFamily};
+        font-weight: ${fontWeight};
+        font-size: ${fontSizePx}px;
+        fill: ${barColor};
+      }
+    </style>
+  </defs>
+  <text x="${leadX}" y="${baselineY}" text-anchor="middle" class="svg-barcode-num">${leadChar}</text>
+  <text x="${leftCenterX}" y="${baselineY}" text-anchor="middle" class="svg-barcode-num" letter-spacing="${spacingPx}px">${leftStr}</text>
+  <text x="${rightCenterX}" y="${baselineY}" text-anchor="middle" class="svg-barcode-num" letter-spacing="${spacingPx}px">${rightStr}</text>`;
+      } else if (textCalls.length === 12) {
+        // UPC-A
+        const leadChar = textCalls[0][2];
+        const leadX = (textCalls[0][0] + xOffset).toFixed(2);
+        const baselineY = (textCalls[0][1] - yOffset).toFixed(2);
+        const leftStr = textCalls.slice(1, 6).map((t) => t[2]).join('');
+        const leftCenterX = ((textCalls[1][0] + textCalls[5][0]) / 2 + xOffset).toFixed(2);
+        const rightStr = textCalls.slice(6, 11).map((t) => t[2]).join('');
+        const rightCenterX = ((textCalls[6][0] + textCalls[10][0]) / 2 + xOffset).toFixed(2);
+        const checkChar = textCalls[11][2];
+        const checkX = (textCalls[11][0] + xOffset).toFixed(2);
+
+        textSvgNodes = `
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&amp;display=swap');
+      .svg-barcode-num {
+        font-family: ${fontFamily};
+        font-weight: ${fontWeight};
+        font-size: ${fontSizePx}px;
+        fill: ${barColor};
+      }
+    </style>
+  </defs>
+  <text x="${leadX}" y="${baselineY}" text-anchor="middle" class="svg-barcode-num">${leadChar}</text>
+  <text x="${leftCenterX}" y="${baselineY}" text-anchor="middle" class="svg-barcode-num" letter-spacing="${spacingPx}px">${leftStr}</text>
+  <text x="${rightCenterX}" y="${baselineY}" text-anchor="middle" class="svg-barcode-num" letter-spacing="${spacingPx}px">${rightStr}</text>
+  <text x="${checkX}" y="${baselineY}" text-anchor="middle" class="svg-barcode-num">${checkChar}</text>`;
+      }
+
+      if (textSvgNodes) {
+        rawSvg = rawSvg.replace('</svg>', `${textSvgNodes}\n</svg>`);
+      }
+    }
   } else {
     const bwipOptions = buildBwipOptions(options);
     rawSvg = bwipjs.toSVG(bwipOptions);

@@ -375,6 +375,47 @@ export const PackageLabelStudio: React.FC<PackageLabelStudioProps> = ({ onRecord
                   </select>
                 </div>
               </div>
+
+              {/* Text Spacing / Letter Tracking */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-600 dark:text-slate-300 font-semibold">
+                    Barcode Digits Spacing / Tracking:
+                  </label>
+                  <span className="font-mono text-slate-500 font-bold">
+                    {(labelState.textSpacing ?? 0.8) > 0 ? `+${labelState.textSpacing ?? 0.8}` : labelState.textSpacing ?? 0.8} pt
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="-1"
+                  max="4"
+                  step="0.2"
+                  value={labelState.textSpacing ?? 0.8}
+                  onChange={(e) => updateState({ textSpacing: parseFloat(e.target.value) })}
+                  className="w-full accent-orange-600 cursor-pointer"
+                />
+                <div className="flex items-center space-x-1 mt-1">
+                  {[
+                    { label: 'Tight', val: 0 },
+                    { label: 'Original Match', val: 0.8 },
+                    { label: 'Spacious', val: 1.5 },
+                  ].map((p) => (
+                    <button
+                      type="button"
+                      key={p.val}
+                      onClick={() => updateState({ textSpacing: p.val })}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                        (labelState.textSpacing ?? 0.8) === p.val
+                          ? 'bg-orange-600 text-white font-bold shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

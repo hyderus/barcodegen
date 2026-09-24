@@ -3,7 +3,8 @@ import {
   BarcodeState 
 } from '../types';
 import { 
-  FONT_OPTIONS 
+  FONT_OPTIONS,
+  SYMBOLOGIES
 } from '../data/symbologies';
 import { isEanUpcSymbology } from '../utils/barcodeGenerator';
 import { 
@@ -115,6 +116,24 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
           <span className="font-semibold text-orange-600 dark:text-orange-400">Hint:</span>
           <span>{state.symbology.helpText}</span>
         </div>
+
+        {state.symbology.bcid === 'upca' && state.text.length === 13 && state.text.startsWith('0') && (
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-xs">
+            <span className="text-orange-800 dark:text-orange-300 font-medium">
+              13-digit code starting with 0 detected. Google packaging labels use EAN-13 format for this.
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const eanSym = SYMBOLOGIES.find(s => s.bcid === 'ean13');
+                if (eanSym) onChange({ symbology: eanSym });
+              }}
+              className="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg shrink-0 ml-2 cursor-pointer shadow-xs"
+            >
+              Switch to EAN-13
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 3. Number / Text Below Barcode Controls (KEY USER REQUIREMENT) */}
@@ -305,6 +324,64 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
                     : 'Align interpretation text relative to the barcode.'}
                 </p>
               </div>
+            </div>
+
+            {/* Text Spacing / Letter Tracking Control */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 mb-1.5">
+                <span className="font-semibold flex items-center space-x-1.5">
+                  <Move className="w-3.5 h-3.5 text-orange-500" />
+                  <span>Text Spacing / Letter Tracking</span>
+                </span>
+                <div className="flex items-center space-x-1">
+                  <input
+                    type="number"
+                    min="-3"
+                    max="10"
+                    step="0.2"
+                    value={state.textSpacing ?? 0}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val)) onChange({ textSpacing: val });
+                    }}
+                    className="w-16 px-2 py-0.5 text-right font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <span className="font-mono text-slate-400 text-xs">pt</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                min="-2"
+                max="6"
+                step="0.2"
+                value={state.textSpacing ?? 0}
+                onChange={(e) => onChange({ textSpacing: parseFloat(e.target.value) })}
+                className="w-full accent-orange-600 cursor-pointer"
+              />
+              <div className="flex items-center space-x-1.5 mt-1.5">
+                {[
+                  { label: 'Tight', spacing: -0.5 },
+                  { label: 'Standard', spacing: 0 },
+                  { label: 'Spacious', spacing: 0.8 },
+                  { label: 'Wide', spacing: 1.5 },
+                ].map((preset) => (
+                  <button
+                    type="button"
+                    key={preset.spacing}
+                    onClick={() => onChange({ textSpacing: preset.spacing })}
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                      (state.textSpacing ?? 0) === preset.spacing
+                        ? 'bg-orange-600 text-white font-bold shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {preset.label} ({preset.spacing > 0 ? `+${preset.spacing}` : preset.spacing})
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
+                Adjusts character kerning and spacing between digits/letters to match physical packaging prints.
+              </p>
             </div>
 
             {/* Text Position & Nudge (Up, Down, Left, Right) */}
@@ -538,6 +615,26 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
               onChange={(e) => onChange({ height: parseInt(e.target.value) })}
               className="w-full accent-orange-600 cursor-pointer"
             />
+            <div className="flex items-center space-x-1 mt-1.5">
+              {[
+                { label: 'Compact 10mm', height: 10 },
+                { label: 'Standard 15mm', height: 15 },
+                { label: 'Tall 20mm', height: 20 },
+              ].map((h) => (
+                <button
+                  type="button"
+                  key={h.height}
+                  onClick={() => onChange({ height: h.height })}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                    state.height === h.height
+                      ? 'bg-orange-600 text-white font-bold shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {h.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Scale */}
