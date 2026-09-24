@@ -192,6 +192,32 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
               </div>
             </div>
 
+            {/* Custom Alternate Display Text / Label */}
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 mb-1.5">
+                <span className="font-semibold">Custom Display Text (Optional Label Override)</span>
+                {state.altText ? (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ altText: '' })}
+                    className="text-[11px] text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                  >
+                    Reset to raw data
+                  </button>
+                ) : null}
+              </div>
+              <input
+                type="text"
+                value={state.altText || ''}
+                placeholder={state.text || 'e.g. SKU: GA03694-GB'}
+                onChange={(e) => onChange({ altText: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+              />
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                Customize the human-readable text printed with the barcode (e.g. adding labels like <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px]">SKU: ...</code> or dual numbers) while encoding the original data.
+              </p>
+            </div>
+
             {/* Font Size & Alignment */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

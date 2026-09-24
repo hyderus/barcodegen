@@ -1,10 +1,11 @@
 import { Symbology } from './data/symbologies';
 
-export type AppMode = 'barcode' | 'qrcode' | 'batch';
+export type AppMode = 'barcode' | 'qrcode' | 'packagelabel' | 'batch';
 
 export interface BarcodeState {
   symbology: Symbology;
   text: string;
+  altText?: string;
   includeText: boolean;
   textFont: string;
   textSize: number;
@@ -19,6 +20,23 @@ export interface BarcodeState {
   padding: number;
   rotate: 'N' | 'R' | 'L' | 'I';
   customFileName: string;
+}
+
+export interface PackageLabelState {
+  modelName: string;
+  sku: string;
+  ean: string;
+  imei1: string;
+  imei2: string;
+  eid: string;
+  batchCode: string;
+  qrPayload: string;
+  font: string;
+  scale: number;
+  backgroundColor: string;
+  barColor: string;
+  isTransparent: boolean;
+  borderStyle: 'rounded' | 'square' | 'none';
 }
 
 export interface QRState {
@@ -61,9 +79,9 @@ export interface HistoryItem {
   timestamp: number;
   type: 'barcode' | 'qrcode';
   title: string;
-  bcid: string;
-  text: string;
-  includeText: boolean;
-  isTransparent: boolean;
+  bcid?: string;
+  text?: string;
+  includeText?: boolean;
+  isTransparent?: boolean;
   dataUrl: string;
 }

@@ -6,6 +6,7 @@ import { QRCodeEditor } from './components/QRCodeEditor';
 import { PreviewCanvas } from './components/PreviewCanvas';
 import { ExportActions } from './components/ExportActions';
 import { BatchGenerator } from './components/BatchGenerator';
+import { PackageLabelStudio } from './components/PackageLabelStudio';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { SYMBOLOGIES, Symbology } from './data/symbologies';
 import { AppMode, BarcodeState, QRState, HistoryItem } from './types';
@@ -61,6 +62,7 @@ export const App: React.FC = () => {
   const [barcodeState, setBarcodeState] = useState<BarcodeState>({
     symbology: SYMBOLOGIES[0], // Code-128
     text: SYMBOLOGIES[0].sample,
+    altText: '',
     includeText: true,
     textFont: 'OCR-B',
     textSize: 8.5,
@@ -166,6 +168,7 @@ export const App: React.FC = () => {
       return {
         bcid: barcodeState.symbology.bcid,
         text: barcodeState.text || '12345',
+        alttext: barcodeState.altText ? barcodeState.altText : undefined,
         scale: barcodeState.scale,
         height: barcodeState.height,
         includetext: barcodeState.includeText,
@@ -211,9 +214,9 @@ export const App: React.FC = () => {
       setCurrentMode('qrcode');
       setQrState((prev) => ({
         ...prev,
-        text: item.text,
-        url: item.text,
-        isTransparent: item.isTransparent,
+        text: item.text || prev.text,
+        url: item.text || prev.url,
+        isTransparent: item.isTransparent !== undefined ? item.isTransparent : prev.isTransparent,
       }));
     } else {
       setCurrentMode('barcode');
@@ -221,9 +224,9 @@ export const App: React.FC = () => {
       setBarcodeState((prev) => ({
         ...prev,
         symbology: foundSym,
-        text: item.text,
-        includeText: item.includeText,
-        isTransparent: item.isTransparent,
+        text: item.text || prev.text,
+        includeText: item.includeText !== undefined ? item.includeText : prev.includeText,
+        isTransparent: item.isTransparent !== undefined ? item.isTransparent : prev.isTransparent,
       }));
     }
   };
@@ -244,11 +247,28 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         
-        {/* Mode 1 & 2: Barcode Studio & QR Code Studio */}
-        {currentMode !== 'batch' ? (
+        {/* Mode 1: Box Label 1:1 Studio */}
+        {currentMode === 'packagelabel' ? (
+          <PackageLabelStudio
+            onRecordHistory={(title, dataUrl) => {
+              const newItem: HistoryItem = {
+                id: Date.now().toString(),
+                timestamp: Date.now(),
+                type: 'barcode',
+                title,
+                dataUrl,
+              };
+              setHistory((prev) => [newItem, ...prev.filter((i) => i.title !== newItem.title)].slice(0, 30));
+            }}
+          />
+        ) : currentMode === 'batch' ? (
+          /* Mode 2: Batch Generator */
+          <BatchGenerator />
+        ) : (
+          /* Mode 3 & 4: Barcode Studio & QR Code Studio */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
             
-            {/* Left Controls Column (5 cols on lg) */}
+            {/* Left Controls Column (6 cols on lg) */}
             <div className="lg:col-span-6 space-y-6">
               
               {/* Studio Banner */}
@@ -338,9 +358,6 @@ export const App: React.FC = () => {
             </div>
 
           </div>
-        ) : (
-          /* Mode 3: Batch Generator */
-          <BatchGenerator />
         )}
 
       </main>

@@ -3,6 +3,7 @@ import {
   Barcode, 
   QrCode, 
   Layers, 
+  Package,
   History, 
   Moon, 
   Sun, 
@@ -76,6 +77,18 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <QrCode className="w-4 h-4" />
               <span>QR Code Studio</span>
+            </button>
+
+            <button
+              onClick={() => onSelectMode('packagelabel')}
+              className={`flex items-center space-x-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 ${
+                currentMode === 'packagelabel'
+                  ? 'bg-white dark:bg-slate-900 text-orange-600 dark:text-orange-400 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Package className="w-4 h-4" />
+              <span>Box Label 1:1</span>
             </button>
 
             <button

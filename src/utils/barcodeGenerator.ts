@@ -5,6 +5,7 @@ import { DM_SANS_BASE64 } from '../assets/dmSansBase64';
 export interface BarcodeRenderOptions {
   bcid: string;
   text: string;
+  alttext?: string;
   scale?: number;
   height?: number;
   includetext?: boolean;
@@ -103,6 +104,10 @@ export function buildBwipOptions(options: BarcodeRenderOptions): any {
       if (options.textxalign && options.textxalign !== 'center') {
         bwipOpts.textxalign = options.textxalign;
       }
+    }
+
+    if (options.alttext) {
+      bwipOpts.alttext = options.alttext;
     }
 
     // Manual user offset control (move up/down via textyoffset, move left/right via textxoffset)
