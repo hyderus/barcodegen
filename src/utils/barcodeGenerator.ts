@@ -11,6 +11,8 @@ export interface BarcodeRenderOptions {
   textfont?: string;
   textsize?: number;
   textxalign?: 'left' | 'center' | 'right';
+  textxoffset?: number;
+  textyoffset?: number;
   barcolor?: string;
   backgroundcolor?: string | null;
   rotate?: 'N' | 'R' | 'L' | 'I';
@@ -101,10 +103,20 @@ export function buildBwipOptions(options: BarcodeRenderOptions): any {
       if (options.textxalign && options.textxalign !== 'center') {
         bwipOpts.textxalign = options.textxalign;
       }
-      // Comfortable vertical breathing room for DM Sans so ascenders never touch bars
-      if (font === 'DMSANS') {
-        bwipOpts.textyoffset = -2;
-      }
+    }
+
+    // Manual user offset control (move up/down via textyoffset, move left/right via textxoffset)
+    let baseYOffset = 0;
+    if (!isEan && font === 'DMSANS') {
+      baseYOffset = -2; // safe baseline breathing room for DM Sans ascenders
+    }
+    const finalYOffset = baseYOffset + (typeof options.textyoffset === 'number' ? options.textyoffset : 0);
+    if (finalYOffset !== 0) {
+      bwipOpts.textyoffset = finalYOffset;
+    }
+
+    if (typeof options.textxoffset === 'number' && options.textxoffset !== 0) {
+      bwipOpts.textxoffset = options.textxoffset;
     }
   }
 

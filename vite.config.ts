@@ -8,4 +8,16 @@ export default defineConfig({
     host: true,
     allowedHosts: true,
   },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-bwip': ['bwip-js'],
+        },
+      },
+    },
+  },
 });

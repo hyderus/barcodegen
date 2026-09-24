@@ -12,7 +12,13 @@ import {
   Sliders, 
   Palette, 
   ChevronRight, 
-  Sparkles
+  Sparkles,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  RotateCcw,
+  Move
 } from 'lucide-react';
 
 interface BarcodeEditorProps {
@@ -189,23 +195,58 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
             {/* Font Size & Alignment */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
-                  <span>Font Size</span>
-                  <span className="font-mono font-medium">{state.textSize}pt</span>
+                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 mb-1.5">
+                  <span className="font-semibold">Font Size</span>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="number"
+                      min="3"
+                      max="32"
+                      step="0.5"
+                      value={state.textSize}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val) && val > 0) onChange({ textSize: val });
+                      }}
+                      className="w-16 px-2 py-0.5 text-right font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <span className="font-mono text-slate-400 text-xs">pt</span>
+                  </div>
                 </div>
                 <input
                   type="range"
-                  min="6"
-                  max="16"
+                  min="4"
+                  max="24"
                   step="0.5"
                   value={state.textSize}
                   onChange={(e) => onChange({ textSize: parseFloat(e.target.value) })}
                   className="w-full accent-orange-600 cursor-pointer"
                 />
+                <div className="flex items-center space-x-1.5 mt-1.5">
+                  {[
+                    { label: 'Small', size: 7 },
+                    { label: 'Standard', size: 8.5 },
+                    { label: 'Medium', size: 10 },
+                    { label: 'Large', size: 12 },
+                  ].map((preset) => (
+                    <button
+                      type="button"
+                      key={preset.size}
+                      onClick={() => onChange({ textSize: preset.size })}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                        state.textSize === preset.size
+                          ? 'bg-orange-600 text-white font-bold shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Text Alignment
                 </label>
                 {isEanUpcSymbology(state.symbology.bcid) ? (
@@ -223,7 +264,7 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
                         onClick={() => onChange({ textAlign: align })}
                         className={`flex-1 py-1 text-xs font-medium rounded capitalize transition-all ${
                           state.textAlign === align
-                            ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm'
+                            ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm font-semibold'
                             : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
@@ -232,6 +273,120 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
                     ))}
                   </div>
                 )}
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2">
+                  {isEanUpcSymbology(state.symbology.bcid)
+                    ? 'Retail symbologies enforce standardized GS1 pockets.'
+                    : 'Align interpretation text relative to the barcode.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Text Position & Nudge (Up, Down, Left, Right) */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                  <Move className="w-3.5 h-3.5 text-orange-500" />
+                  <span>Text Positioning & Nudge (Up / Down / Left / Right)</span>
+                </label>
+                {(state.textXOffset || state.textYOffset) ? (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ textXOffset: 0, textYOffset: 0 })}
+                    className="flex items-center space-x-1 text-[11px] font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset Position</span>
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                {/* D-Pad Nudge Buttons */}
+                <div className="flex flex-col items-center justify-center space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => onChange({ textYOffset: (state.textYOffset || 0) + 1 })}
+                    title="Nudge Text Up (+1pt)"
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-700 hover:bg-orange-50 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-orange-600 transition-all active:scale-95 shadow-xs cursor-pointer"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => onChange({ textXOffset: (state.textXOffset || 0) - 1 })}
+                      title="Nudge Text Left (-1pt)"
+                      className="p-1.5 rounded-lg bg-white dark:bg-slate-700 hover:bg-orange-50 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-orange-600 transition-all active:scale-95 shadow-xs cursor-pointer"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onChange({ textXOffset: 0, textYOffset: 0 })}
+                      title="Center / Reset Offset to (0, 0)"
+                      className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-600 hover:bg-orange-100 dark:hover:bg-slate-500 text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:text-orange-600 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+                    >
+                      0,0
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onChange({ textXOffset: (state.textXOffset || 0) + 1 })}
+                      title="Nudge Text Right (+1pt)"
+                      className="p-1.5 rounded-lg bg-white dark:bg-slate-700 hover:bg-orange-50 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-orange-600 transition-all active:scale-95 shadow-xs cursor-pointer"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ textYOffset: (state.textYOffset || 0) - 1 })}
+                    title="Nudge Text Down (-1pt)"
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-700 hover:bg-orange-50 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-orange-600 transition-all active:scale-95 shadow-xs cursor-pointer"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Direct Number Inputs for X and Y Offsets */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Horizontal (X Offset):</span>
+                    <div className="flex items-center space-x-1">
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={state.textXOffset ?? 0}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) onChange({ textXOffset: val });
+                        }}
+                        className="w-16 px-2 py-0.5 text-right font-mono font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-orange-500"
+                      />
+                      <span className="font-mono text-slate-400">pt</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Vertical (Y Offset):</span>
+                    <div className="flex items-center space-x-1">
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={state.textYOffset ?? 0}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) onChange({ textYOffset: val });
+                        }}
+                        className="w-16 px-2 py-0.5 text-right font-mono font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-orange-500"
+                      />
+                      <span className="font-mono text-slate-400">pt</span>
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500 pt-0.5">
+                    Tip: Positive Y moves up, negative Y moves down. Positive X moves right, negative X moves left.
+                  </div>
+                </div>
               </div>
             </div>
           </div>

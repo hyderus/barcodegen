@@ -9,6 +9,8 @@ export interface BarcodeState {
   textFont: string;
   textSize: number;
   textAlign: 'left' | 'center' | 'right';
+  textXOffset?: number;
+  textYOffset?: number;
   barColor: string;
   backgroundColor: string;
   isTransparent: boolean;
