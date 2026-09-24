@@ -268,7 +268,7 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
           >
             {svgMarkup ? (
               <div 
-                className="flex items-center justify-center max-w-full max-h-full [&>svg]:block [&>svg]:max-w-[540px] [&>svg]:max-h-[320px] [&>svg]:h-auto [&>svg]:drop-shadow-md"
+                className="flex items-center justify-center max-w-full max-h-full [&>svg]:block [&>svg]:max-w-full [&>svg]:max-h-[340px] [&>svg]:w-auto [&>svg]:h-auto [&>svg]:drop-shadow-md"
                 dangerouslySetInnerHTML={{ __html: svgMarkup }}
               />
             ) : null}

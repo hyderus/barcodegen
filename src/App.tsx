@@ -156,7 +156,6 @@ export const App: React.FC = () => {
         bcid: 'qrcode',
         text: qrEncodedText,
         scale: qrState.scale,
-        height: 10,
         includetext: false,
         barcolor: qrState.barColor,
         backgroundcolor: qrState.isTransparent ? null : qrState.backgroundColor,
