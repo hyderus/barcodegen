@@ -424,31 +424,31 @@ export const PackageLabelStudio: React.FC<PackageLabelStudioProps> = ({ onRecord
                     EAN-13 Guard Bar Extension:
                   </label>
                   <span className="font-mono text-slate-500 font-bold">
-                    {(labelState.guardBarHeight ?? 5) === 0 ? 'Flat (0pt)' : `+${labelState.guardBarHeight ?? 5} pt`}
+                    {(labelState.guardBarHeight ?? 9.5) === 0 ? 'Flat (0pt)' : `+${labelState.guardBarHeight ?? 9.5} pt`}
                   </span>
                 </div>
                 <input
                   type="range"
                   min="0"
-                  max="12"
+                  max="15"
                   step="0.5"
-                  value={labelState.guardBarHeight ?? 5}
+                  value={labelState.guardBarHeight ?? 9.5}
                   onChange={(e) => updateState({ guardBarHeight: parseFloat(e.target.value) })}
                   className="w-full accent-orange-600 cursor-pointer"
                 />
-                <div className="flex items-center space-x-1 mt-1">
+                <div className="flex flex-wrap items-center gap-1 mt-1">
                   {[
                     { label: 'Flat Bottom (0pt)', val: 0 },
-                    { label: 'Subtle (2.5pt)', val: 2.5 },
                     { label: 'Standard GS1 (5pt)', val: 5 },
-                    { label: 'Extended (8pt)', val: 8 },
+                    { label: 'EAN-13 Default (9.5pt)', val: 9.5 },
+                    { label: 'Tall Guard (12pt)', val: 12 },
                   ].map((p) => (
                     <button
                       type="button"
                       key={p.val}
                       onClick={() => updateState({ guardBarHeight: p.val })}
                       className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
-                        (labelState.guardBarHeight ?? 5) === p.val
+                        (labelState.guardBarHeight ?? 9.5) === p.val
                           ? 'bg-orange-600 text-white font-bold shadow-xs'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                       }`}

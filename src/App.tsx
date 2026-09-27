@@ -123,6 +123,7 @@ export const App: React.FC = () => {
       ...prev,
       symbology: newSymbology,
       text: newSymbology.sample, // Auto seed with valid sample so it never errors!
+      guardBarHeight: newSymbology.bcid === 'ean13' ? 9.5 : (prev.guardBarHeight === 9.5 ? 5 : (prev.guardBarHeight ?? 5)),
     }));
   };
 
@@ -179,7 +180,9 @@ export const App: React.FC = () => {
         textxoffset: barcodeState.textXOffset || 0,
         textyoffset: barcodeState.textYOffset || 0,
         textspacing: barcodeState.textSpacing || 0,
-        guarddescent: typeof barcodeState.guardBarHeight === 'number' ? barcodeState.guardBarHeight : 5,
+        guarddescent: typeof barcodeState.guardBarHeight === 'number'
+          ? barcodeState.guardBarHeight
+          : (barcodeState.symbology.bcid === 'ean13' ? 9.5 : 5),
         barcolor: barcodeState.barColor,
         backgroundcolor: barcodeState.isTransparent ? null : barcodeState.backgroundColor,
         rotate: barcodeState.rotate,

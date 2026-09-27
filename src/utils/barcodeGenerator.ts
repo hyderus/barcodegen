@@ -137,8 +137,12 @@ export function buildBwipOptions(options: BarcodeRenderOptions): any {
   }
 
   // Pass guarddescent for EAN/UPC retail symbologies (downward guard bar extension)
-  if (isEan && typeof options.guarddescent === 'number') {
-    bwipOpts.guarddescent = options.guarddescent;
+  if (isEan) {
+    if (typeof options.guarddescent === 'number') {
+      bwipOpts.guarddescent = options.guarddescent;
+    } else if (options.bcid?.toLowerCase() === 'ean13') {
+      bwipOpts.guarddescent = 9.5;
+    }
   }
 
   if (cleanBgColor) {

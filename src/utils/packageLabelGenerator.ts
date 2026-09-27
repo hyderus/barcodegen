@@ -14,6 +14,7 @@ export const DEFAULT_PIXEL_LABEL: PackageLabelState = {
   font: 'DM Sans',
   scale: 3, // High DPI for crisp printing
   textSpacing: 0.8,
+  guardBarHeight: 9.5,
   backgroundColor: '#ffffff',
   barColor: '#000000',
   isTransparent: false,
@@ -66,7 +67,7 @@ export function generatePackageLabelSvg(state: PackageLabelState): string {
       textsize: 8.5,
       scale: 2,
       height: 12,
-      guarddescent: typeof state.guardBarHeight === 'number' ? state.guardBarHeight : 5,
+      guarddescent: typeof state.guardBarHeight === 'number' ? state.guardBarHeight : 9.5,
       textspacing: state.textSpacing || 0.8,
       barcolor: barColor.replace('#', ''),
     });
@@ -253,6 +254,7 @@ export function renderPackageLabelToCanvas(
       textsize: 8.5,
       scale: 2,
       height: 12,
+      guarddescent: typeof state.guardBarHeight === 'number' ? state.guardBarHeight : 9.5,
       textspacing: state.textSpacing || 0.8,
       barcolor: barColor.replace('#', ''),
     });
