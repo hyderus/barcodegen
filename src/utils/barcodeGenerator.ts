@@ -347,68 +347,99 @@ function renderUnifiedLinearCanvasText(
 }
 
 /**
- * Renders a barcode to an existing HTMLCanvasElement with unified pocket typography and text spacing.
+ * Renders a barcode to an existing HTMLCanvasElement using high-fidelity vector path operations.
+ * By utilizing BWIPP's drawingSVG primitives and Canvas 2D Path2D stroking, this guarantees
+ * uniform stroke weights between guard bars and data bars, eliminating rasterization distortion.
  */
 export function renderToCanvas(
   canvas: HTMLCanvasElement,
   options: BarcodeRenderOptions
 ): void {
   const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
+  if (!ctx) return;
 
   const isEan = isEanUpcSymbology(options.bcid);
-  const is2DMatrix = isSquare2dSymbology(options.bcid);
   const resolvedFont = resolveFont(options.textfont, options.bcid);
 
-  if (is2DMatrix || !options.includetext) {
-    if (!options.includetext && isEan) {
-      if (options.guarddescent === 0) {
-        // Flat bottom requested without text: render cleanly flush without empty pocket gap
-        const bwipOptions = buildBwipOptions({
-          ...options,
-          includetext: false,
-        });
-        bwipjs.toCanvas(canvas, bwipOptions);
-      } else {
-        // Preserve authentic ISO/GS1 guard bars & pockets without drawing numbers
-        const drawing = (bwipjs as any).drawingCanvas(canvas);
-        drawing.text = function() {};
-        const bwipOptions = buildBwipOptions({
-          ...options,
-          includetext: true,
-        });
-        bwipjs.render(bwipOptions, drawing);
-        if (typeof drawing.end === 'function') drawing.end();
-      }
+  if (typeof Path2D !== 'undefined' && (bwipjs as any).drawingSVG) {
+    const textCalls: Array<[number, number, string, string, any]> = [];
+    const drawing = (bwipjs as any).drawingSVG();
+
+    if (options.includetext) {
+      drawing.text = function(...args: any[]) {
+        textCalls.push(args as any);
+      };
+    } else if (isEan && options.guarddescent !== 0) {
+      drawing.text = function() {};
+    }
+
+    const bwipOptions = buildBwipOptions({
+      ...options,
+      includetext: isEan && options.guarddescent !== 0 ? true : !!options.includetext,
+    });
+
+    bwipjs.render(bwipOptions, drawing);
+    const rawSvg = drawing.end();
+
+    const vbMatch = rawSvg.match(/viewBox="0 0 ([\d\.]+) ([\d\.]+)"/);
+    const width = vbMatch ? Math.round(parseFloat(vbMatch[1])) : canvas.width;
+    const height = vbMatch ? Math.round(parseFloat(vbMatch[2])) : canvas.height;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const cleanBgColor = cleanHex(options.backgroundcolor);
+    if (cleanBgColor) {
+      ctx.fillStyle = `#${cleanBgColor}`;
+      ctx.fillRect(0, 0, width, height);
     } else {
-      const bwipOptions = buildBwipOptions(options);
-      bwipjs.toCanvas(canvas, bwipOptions);
+      ctx.clearRect(0, 0, width, height);
+    }
+
+    const re = /<path([^>]+)\/>/g;
+    let m;
+    while ((m = re.exec(rawSvg)) !== null) {
+      const attrs = m[1];
+      const dMatch = attrs.match(/d="([^"]+)"/);
+      if (!dMatch) continue;
+      const d = dMatch[1];
+      const swMatch = attrs.match(/stroke-width="([^"]+)"/);
+      const strokeMatch = attrs.match(/stroke="([^"]+)"/);
+      const fillMatch = attrs.match(/fill="([^"]+)"/);
+
+      const fillRuleMatch = attrs.match(/fill-rule="([^"]+)"/);
+      const fillRule: CanvasFillRule =
+        fillRuleMatch && fillRuleMatch[1] === 'evenodd' ? 'evenodd' : 'nonzero';
+
+      const path2d = new Path2D(d);
+      if (swMatch && strokeMatch) {
+        ctx.lineWidth = parseFloat(swMatch[1]);
+        ctx.strokeStyle = strokeMatch[1];
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'miter';
+        ctx.stroke(path2d);
+      } else if (fillMatch) {
+        ctx.fillStyle = fillMatch[1];
+        ctx.fill(path2d, fillRule);
+      } else {
+        ctx.fillStyle = options.barcolor ? `#${cleanHex(options.barcolor)}` : '#000000';
+        ctx.fill(path2d, fillRule);
+      }
+    }
+
+    if (options.includetext && textCalls.length > 0) {
+      if (isEan) {
+        renderUnifiedEanCanvasText(ctx, options, textCalls, resolvedFont);
+      } else {
+        renderUnifiedLinearCanvasText(ctx, canvas, options, textCalls, resolvedFont);
+      }
     }
     return;
   }
 
-  // Intercept monospaced fixed-slot text to render cohesive grouped pocket numbers or custom linear tracking
-  const textCalls: Array<[number, number, string, string, any]> = [];
-  const drawing = (bwipjs as any).drawingCanvas(canvas);
-  drawing.text = function(...args: any[]) {
-    textCalls.push(args as any);
-  };
-  const bwipOptions = buildBwipOptions({
-    ...options,
-    includetext: true,
-  });
-  bwipjs.render(bwipOptions, drawing);
-  if (typeof drawing.end === 'function') drawing.end();
-
-  if (ctx && textCalls.length > 0) {
-    if (isEan) {
-      renderUnifiedEanCanvasText(ctx, options, textCalls, resolvedFont);
-    } else {
-      renderUnifiedLinearCanvasText(ctx, canvas, options, textCalls, resolvedFont);
-    }
-  }
+  // Fallback for environments without Path2D
+  const bwipOptions = buildBwipOptions(options);
+  bwipjs.toCanvas(canvas, bwipOptions);
 }
 
 /**
@@ -620,6 +651,14 @@ export async function generatePngBlob(
   options: BarcodeRenderOptions,
   resolutionMultiplier: number = 1
 ): Promise<Blob> {
+  if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Font readiness fallback
+    }
+  }
+
   const offscreenCanvas = document.createElement('canvas');
   const targetScale = (options.scale || 3) * resolutionMultiplier;
 
