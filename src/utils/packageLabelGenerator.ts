@@ -66,6 +66,7 @@ export function generatePackageLabelSvg(state: PackageLabelState): string {
       textsize: 8.5,
       scale: 2,
       height: 12,
+      guarddescent: typeof state.guardBarHeight === 'number' ? state.guardBarHeight : 5,
       textspacing: state.textSpacing || 0.8,
       barcolor: barColor.replace('#', ''),
     });

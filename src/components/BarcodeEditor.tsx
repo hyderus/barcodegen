@@ -298,7 +298,7 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
                   <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
                     <span className="font-semibold text-slate-700 dark:text-slate-200">ISO Standard Pockets</span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-300 dark:border-emerald-800/60">
-                      Auto Guard-Bars
+                      {(state.guardBarHeight ?? 5) === 0 ? 'Flat Bottom (0pt)' : `Guards: +${state.guardBarHeight ?? 5}pt`}
                     </span>
                   </div>
                 ) : (
@@ -669,6 +669,70 @@ export const BarcodeEditor: React.FC<BarcodeEditorProps> = ({
             />
           </div>
         </div>
+
+        {/* Guard Bar Extension / Height (EAN & UPC Symbologies Only) */}
+        {isEanUpcSymbology(state.symbology.bcid) && (
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 mb-1.5">
+              <span className="font-semibold flex items-center space-x-1.5">
+                <Sliders className="w-3.5 h-3.5 text-orange-500" />
+                <span>Guard Bar Extension (Downward Height)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-300 dark:border-emerald-800/60">
+                  GS1 / Retail Spec
+                </span>
+              </span>
+              <div className="flex items-center space-x-1">
+                <input
+                  type="number"
+                  min="0"
+                  max="15"
+                  step="0.5"
+                  value={state.guardBarHeight ?? 5}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val) && val >= 0) onChange({ guardBarHeight: val });
+                  }}
+                  className="w-16 px-2 py-0.5 text-right font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <span className="font-mono text-slate-400 text-xs">pt</span>
+              </div>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="15"
+              step="0.5"
+              value={state.guardBarHeight ?? 5}
+              onChange={(e) => onChange({ guardBarHeight: parseFloat(e.target.value) })}
+              className="w-full accent-orange-600 cursor-pointer"
+            />
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              {[
+                { label: 'Flat Bottom (0pt)', val: 0 },
+                { label: 'Subtle (2.5pt)', val: 2.5 },
+                { label: 'Standard GS1 (5pt)', val: 5 },
+                { label: 'Extended (8pt)', val: 8 },
+                { label: 'Tall Guard (12pt)', val: 12 },
+              ].map((preset) => (
+                <button
+                  type="button"
+                  key={preset.val}
+                  onClick={() => onChange({ guardBarHeight: preset.val })}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                    (state.guardBarHeight ?? 5) === preset.val
+                      ? 'bg-orange-600 text-white font-bold shadow-xs ring-1 ring-orange-500/40'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2">
+              Controls how far start, center, and end guard bars extend below payload data bars. Set to <strong>0pt</strong> for a completely flat bottom edge without vertical guard overhangs (ideal for truncated packaging).
+            </p>
+          </div>
+        )}
 
         {/* Rotation */}
         <div className="pt-2 flex items-center justify-between">

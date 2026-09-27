@@ -13,6 +13,7 @@ export interface BarcodeState {
   textXOffset?: number;
   textYOffset?: number;
   textSpacing?: number;
+  guardBarHeight?: number;
   barColor: string;
   backgroundColor: string;
   isTransparent: boolean;
@@ -35,6 +36,7 @@ export interface PackageLabelState {
   font: string;
   scale: number;
   textSpacing?: number;
+  guardBarHeight?: number;
   backgroundColor: string;
   barColor: string;
   isTransparent: boolean;

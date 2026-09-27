@@ -416,6 +416,48 @@ export const PackageLabelStudio: React.FC<PackageLabelStudioProps> = ({ onRecord
                   ))}
                 </div>
               </div>
+
+              {/* EAN-13 Guard Bar Extension */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-600 dark:text-slate-300 font-semibold">
+                    EAN-13 Guard Bar Extension:
+                  </label>
+                  <span className="font-mono text-slate-500 font-bold">
+                    {(labelState.guardBarHeight ?? 5) === 0 ? 'Flat (0pt)' : `+${labelState.guardBarHeight ?? 5} pt`}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="12"
+                  step="0.5"
+                  value={labelState.guardBarHeight ?? 5}
+                  onChange={(e) => updateState({ guardBarHeight: parseFloat(e.target.value) })}
+                  className="w-full accent-orange-600 cursor-pointer"
+                />
+                <div className="flex items-center space-x-1 mt-1">
+                  {[
+                    { label: 'Flat Bottom (0pt)', val: 0 },
+                    { label: 'Subtle (2.5pt)', val: 2.5 },
+                    { label: 'Standard GS1 (5pt)', val: 5 },
+                    { label: 'Extended (8pt)', val: 8 },
+                  ].map((p) => (
+                    <button
+                      type="button"
+                      key={p.val}
+                      onClick={() => updateState({ guardBarHeight: p.val })}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                        (labelState.guardBarHeight ?? 5) === p.val
+                          ? 'bg-orange-600 text-white font-bold shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

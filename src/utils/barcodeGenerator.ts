@@ -8,6 +8,7 @@ export interface BarcodeRenderOptions {
   alttext?: string;
   scale?: number;
   height?: number;
+  guarddescent?: number;
   includetext?: boolean;
   textfont?: string;
   textsize?: number;
@@ -133,6 +134,11 @@ export function buildBwipOptions(options: BarcodeRenderOptions): any {
   // Passing height to 2D matrix symbologies distorts their square aspect ratio.
   if (!is2DMatrix) {
     bwipOpts.height = typeof options.height === 'number' && options.height > 0 ? options.height : 15;
+  }
+
+  // Pass guarddescent for EAN/UPC retail symbologies (downward guard bar extension)
+  if (isEan && typeof options.guarddescent === 'number') {
+    bwipOpts.guarddescent = options.guarddescent;
   }
 
   if (cleanBgColor) {
@@ -354,15 +360,24 @@ export function renderToCanvas(
 
   if (is2DMatrix || !options.includetext) {
     if (!options.includetext && isEan) {
-      // Preserve authentic ISO/GS1 guard bars & pockets without drawing numbers
-      const drawing = (bwipjs as any).drawingCanvas(canvas);
-      drawing.text = function() {};
-      const bwipOptions = buildBwipOptions({
-        ...options,
-        includetext: true,
-      });
-      bwipjs.render(bwipOptions, drawing);
-      if (typeof drawing.end === 'function') drawing.end();
+      if (options.guarddescent === 0) {
+        // Flat bottom requested without text: render cleanly flush without empty pocket gap
+        const bwipOptions = buildBwipOptions({
+          ...options,
+          includetext: false,
+        });
+        bwipjs.toCanvas(canvas, bwipOptions);
+      } else {
+        // Preserve authentic ISO/GS1 guard bars & pockets without drawing numbers
+        const drawing = (bwipjs as any).drawingCanvas(canvas);
+        drawing.text = function() {};
+        const bwipOptions = buildBwipOptions({
+          ...options,
+          includetext: true,
+        });
+        bwipjs.render(bwipOptions, drawing);
+        if (typeof drawing.end === 'function') drawing.end();
+      }
     } else {
       const bwipOptions = buildBwipOptions(options);
       bwipjs.toCanvas(canvas, bwipOptions);
@@ -404,15 +419,24 @@ export function renderToSvg(options: BarcodeRenderOptions): string {
 
   if (is2DMatrix || !options.includetext) {
     if (!options.includetext && isEan) {
-      // Preserve authentic ISO/GS1 guard bars & pockets without drawing text paths
-      const drawing = (bwipjs as any).drawingSVG();
-      drawing.text = function() {};
-      const bwipOptions = buildBwipOptions({
-        ...options,
-        includetext: true,
-      });
-      bwipjs.render(bwipOptions, drawing);
-      rawSvg = drawing.end();
+      if (options.guarddescent === 0) {
+        // Flat bottom requested without text: render cleanly flush without empty pocket gap
+        const bwipOptions = buildBwipOptions({
+          ...options,
+          includetext: false,
+        });
+        rawSvg = bwipjs.toSVG(bwipOptions);
+      } else {
+        // Preserve authentic ISO/GS1 guard bars & pockets without drawing text paths
+        const drawing = (bwipjs as any).drawingSVG();
+        drawing.text = function() {};
+        const bwipOptions = buildBwipOptions({
+          ...options,
+          includetext: true,
+        });
+        bwipjs.render(bwipOptions, drawing);
+        rawSvg = drawing.end();
+      }
     } else {
       const bwipOptions = buildBwipOptions(options);
       rawSvg = bwipjs.toSVG(bwipOptions);
