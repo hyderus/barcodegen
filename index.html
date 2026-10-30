@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Pixel Packaging Barcode Studio (600 DPI Master)</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 5v14'/><path d='M8 5v14'/><path d='M12 5v14'/><path d='M17 5v14'/><path d='M21 5v14'/></svg>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Work Sans';
+            src: url('./WorkSans-VariableFont_wght.ttf') format('truetype');
+            font-weight: 100 900;
+            font-style: normal;
+        }
+
+        :root {
+            --bg: #0b0f19;
+            --surface: #131b2e;
+            --surface-card: #1e293b;
+            --border: #334155;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container { max-width: 1360px; margin: 0 auto; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-title p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+        .badge {
+            background: #0284c7;
+            color: #fff;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .panel h2 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 9px 12px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 10px 16px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: var(--surface-card); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #334155; }
+        .btn-success { background: #059669; color: #fff; }
+        .btn-success:hover { background: #047857; }
+        .btn-block { width: 100%; }
+        .btn-group { display: flex; gap: 8px; }
+
+        .preview-section { display: flex; flex-direction: column; gap: 24px; }
+        .preview-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .preview-container {
+            width: 100%;
+            background-color: #f8fafc;
+            background-image: 
+                linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: auto;
+            border: 1px solid #cbd5e1;
+        }
+
+        #previewCanvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-title">
+                <h1>Google Pixel Packaging Barcode Studio <span class="badge">100% Client-Side</span></h1>
+                <p>Millimeter-precise reproduction (GS1 EAN-13, Code 128, QR Code, Work Sans Variable)</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <span class="badge" style="background: #10b981;">GitHub Pages Live</span>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Controls Sidebar -->
+            <div class="panel">
+                <h2>Sticker Configuration</h2>
+
+                <div class="form-group">
+                    <label>Quick Preset</label>
+                    <select id="preset" onchange="loadPreset(this.value)">
+                        <option value="pixel7_original" selected>Pixel 7 (Snow / GB - Original Packaging)</option>
+                        <option value="pixel7pro">Pixel 7 Pro (Obsidian / GB)</option>
+                        <option value="pixel8">Pixel 8 (Rose / US)</option>
+                        <option value="pixel8pro">Pixel 8 Pro (Bay / US)</option>
+                        <option value="pixel9pro">Pixel 9 Pro (Porcelain / US)</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Product SKU</label>
+                        <input type="text" id="sku" value="GA03694-GB" oninput="render()">
+                    </div>
+                    <div class="form-group">
+                        <label>Lot / Date Code</label>
+                        <input type="text" id="lot" value="4302" oninput="render()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>UPC / EAN-13 (12 or 13 digits)</label>
+                    <input type="text" id="ean" value="0840244701819" oninput="render()">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>IMEI 1</label>
+                        <input type="text" id="imei1" value="354487208189804" oninput="render()">
+                    </div>
+                    <div class="form-group">
+                        <label>IMEI 2</label>
+                        <input type="text" id="imei2" value="354487208189812" oninput="render()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>eID (32 Digits)</label>
+                    <input type="text" id="eid" value="89033023427100000000027633036749" oninput="render()">
+                </div>
+
+                <div class="form-group">
+                    <label>Google Activation QR URL (optional override)</label>
+                    <input type="text" id="qr" placeholder="Default: https://da.app.google/<IMEI1>" oninput="render()">
+                </div>
+
+                <!-- Text Thickness Slider -->
+                <div class="form-group" style="background: var(--surface-card); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="margin: 0; color: #fff; font-weight: 600;">Text Thickness (Work Sans)</label>
+                        <span id="weight_badge" class="badge" style="background: var(--primary);">Medium (520)</span>
+                    </div>
+                    <input type="range" id="font_weight" min="100" max="900" step="10" value="520" oninput="syncWeight(this.value); render();" style="width: 100%;">
+                    <div class="btn-group" style="margin-top: 8px;">
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 8px; flex: 1;" onclick="setWeight(300)">Slim (300)</button>
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 8px; flex: 1;" onclick="setWeight(420)">Regular (420)</button>
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 8px; flex: 1;" onclick="setWeight(520)">Medium (520)</button>
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 8px; flex: 1;" onclick="setWeight(700)">Fat (700)</button>
+                    </div>
+                </div>
+
+                <!-- EAN-13 Guard Rails Thickness -->
+                <div class="form-group" style="background: var(--surface-card); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="margin: 0; color: #fff; font-weight: 600;">EAN-13 Guard Rails Thickness</label>
+                        <span id="guard_badge" class="badge" style="background: #10b981;">1.5x Fatter (3 px)</span>
+                    </div>
+                    <input type="range" id="guard_scale" min="0.8" max="2.5" step="0.1" value="1.5" oninput="syncGuard(this.value); render();" style="width: 100%;">
+                    <div class="btn-group" style="margin-top: 8px;">
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 8px; flex: 1;" onclick="setGuard(1.0)">Slim (1.0x)</button>
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 8px; flex: 1;" onclick="setGuard(1.5)">1.5x Fatter (Default)</button>
+                        <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 5px 8px; flex: 1;" onclick="setGuard(2.0)">Bold (2.0x)</button>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 14px;">
+                    <div class="form-group">
+                        <label>Print Canvas / Crop Area</label>
+                        <select id="crop_mode" onchange="render()">
+                            <option value="border_bounds" selected>Where Border Ends (67 × 20 mm - No Border)</option>
+                            <option value="full">Full Label Canvas (70 × 22 mm)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Background</label>
+                        <select id="bg_opt" onchange="render()">
+                            <option value="transparent" selected>Always Transparent</option>
+                            <option value="white">Solid White</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="btn-group" style="margin-top: 8px;">
+                    <button class="btn btn-secondary" onclick="randomizeData()" style="flex: 1;">Randomize Valid IMEIs & eID</button>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="preview-section">
+                <div class="preview-card">
+                    <div class="preview-header">
+                        <h2>Live Preview</h2>
+                        <span id="dpi-badge" class="badge">600 DPI Master</span>
+                    </div>
+
+                    <div class="preview-container">
+                        <canvas id="previewCanvas"></canvas>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 16px;">
+                        <button class="btn btn-primary" onclick="downloadPng('border_bounds')" style="font-size: 15px; padding: 12px;">
+                            Download Transparent PNG (Where Border Ends: 67 × 20 mm)
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadPng('full')">
+                            Download Transparent PNG (Full 70 × 22 mm)
+                        </button>
+                        <button class="btn btn-success" onclick="downloadPdf()">
+                            Download Print-Ready PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden QR Code generation container -->
+    <div id="qr_temp" style="display: none;"></div>
+
+    <script>
+        // Preset Data
+        const PRESETS = {
+            pixel7_original: { sku: "GA03694-GB", ean: "0840244701819", imei1: "354487208189804", imei2: "354487208189812", eid: "89033023427100000000027633036749", lot: "4302" },
+            pixel7pro: { sku: "GA03463-GB", ean: "0840244700508", imei1: "359876201234567", imei2: "359876201234575", eid: "89033023427100000000012345678901", lot: "4305" },
+            pixel8: { sku: "GA04803-US", ean: "0840244705015", imei1: "351234567890123", imei2: "351234567890131", eid: "89033023427100000000088888888888", lot: "4340" },
+            pixel8pro: { sku: "GA04834-US", ean: "0840244706012", imei1: "357890123456789", imei2: "357890123456797", eid: "89033023427100000000077777777777", lot: "4342" },
+            pixel9pro: { sku: "GA05842-US", ean: "0840244712012", imei1: "356789012345678", imei2: "356789012345686", eid: "89033023427100000000099999999999", lot: "4420" }
+        };
+
+        // --- Pure Client-Side Code 128 Engine ---
+        const C128_CODES = ["11011001100", "11001101100", "11001100110", "10010011000", "10010001100", "10001001100", "10011001000", "10011000100", "10001100100", "11001001000", "11001000100", "11000100100", "10110011100", "10011011100", "10011001110", "10111001100", "10011101100", "10011100110", "11001110010", "11001011100", "11001001110", "11011100100", "11001110100", "11101101110", "11101001100", "11100101100", "11100100110", "11101100100", "11100110100", "11100110010", "11011011000", "11011000110", "11000110110", "10100011000", "10001011000", "10001000110", "10110001000", "10001101000", "10001100010", "11010001000", "11000101000", "11000100010", "10110111000", "10110001110", "10001101110", "10111011000", "10111000110", "10001110110", "11101110110", "11010001110", "11000101110", "11011101000", "11011100010", "11011101110", "11101011000", "11101000110", "11100010110", "11101101000", "11101100010", "11100011010", "11101111010", "11001000010", "11110001010", "10100110000", "10100001100", "10010110000", "10010000110", "10000101100", "10000100110", "10110010000", "10110000100", "10011010000", "10011000010", "10000110100", "10000110010", "11000010010", "11001010000", "11110111010", "11000010100", "10001111010", "10100111100", "10010111100", "10010011110", "10111100100", "10011110100", "10011110010", "11110100100", "11110010100", "11110010010", "11011011110", "11011110110", "11110110110", "10101111000", "10100011110", "10001011110", "10111101000", "10111100010", "11110101000", "11110100010", "10111011110", "10111101110", "11101011110", "11110101110", "11010000100", "11010010000", "11010011100"];
+        const C128_STOP = "1100011101011";
+
+        function encodeCode128(text) {
+            let codes = [];
+            let i = 0;
+            let numDigits = 0;
+            for (let ch of text) {
+                if (ch >= '0' && ch <= '9') numDigits++;
+                else break;
+            }
+            let mode = numDigits >= 4 ? 'C' : 'B';
+            codes.push(mode === 'C' ? 105 : 104);
+
+            while (i < text.length) {
+                if (mode === 'C') {
+                    if (i + 1 < text.length && text[i] >= '0' && text[i] <= '9' && text[i+1] >= '0' && text[i+1] <= '9') {
+                        codes.push(parseInt(text.substring(i, i + 2), 10));
+                        i += 2;
+                    } else {
+                        mode = 'B';
+                        codes.push(100);
+                    }
+                } else {
+                    let digCount = 0;
+                    for (let k = i; k < text.length; k++) {
+                        if (text[k] >= '0' && text[k] <= '9') digCount++;
+                        else break;
+                    }
+                    if (digCount >= 4 && (digCount % 2 === 0 || digCount > 4)) {
+                        mode = 'C';
+                        codes.push(99);
+                    } else {
+                        codes.push(text.charCodeAt(i) - 32);
+                        i++;
+                    }
+                }
+            }
+
+            let chk = codes[0];
+            for (let idx = 1; idx < codes.length; idx++) {
+                chk += idx * codes[idx];
+            }
+            chk %= 103;
+            codes.push(chk);
+
+            let bits = "";
+            for (let c of codes) {
+                bits += C128_CODES[c];
+            }
+            bits += C128_STOP;
+            return bits;
+        }
+
+        // --- Pure Client-Side EAN-13 Engine ---
+        const EAN_L_PATTERN = ['AAAAAA', 'AABABB', 'AABBAB', 'AABBBA', 'ABAABB', 'ABBAAB', 'ABBBAA', 'ABABAB', 'ABABBA', 'ABBABA'];
+        const EAN_CODES = {
+            A: ['0001101', '0011001', '0010011', '0111101', '0100011', '0110001', '0101111', '0111011', '0110111', '0001011'],
+            B: ['0100111', '0110011', '0011011', '0100001', '0011101', '0111001', '0000101', '0010001', '0001001', '0010111'],
+            C: ['1110010', '1100110', '1101100', '1000010', '1011100', '1001110', '1010000', '1000100', '1001000', '1110100']
+        };
+
+        function calculateEanChecksum(str12) {
+            let evensum = 0, oddsum = 0;
+            for (let i = 0; i < 12; i++) {
+                let digit = parseInt(str12[i], 10);
+                if (i % 2 === 0) evensum += digit;
+                else oddsum += digit;
+            }
+            return (10 - ((evensum + oddsum * 3) % 10)) % 10;
+        }
+
+        function normalizeEan(str) {
+            let digits = str.replace(/\D/g, '');
+            if (digits.length < 12) digits = digits.padStart(12, '0');
+            let base = digits.substring(0, 12);
+            let chk = calculateEanChecksum(base);
+            return base + chk;
+        }
+
+        function encodeEan13(cleanEan) {
+            let code = '101'; // Edge
+            let pattern = EAN_L_PATTERN[parseInt(cleanEan[0], 10)];
+            for (let i = 0; i < 6; i++) {
+                let p = pattern[i];
+                let d = parseInt(cleanEan[i + 1], 10);
+                code += EAN_CODES[p][d];
+            }
+            code += '01010'; // Middle
+            for (let i = 7; i < 13; i++) {
+                let d = parseInt(cleanEan[i], 10);
+                code += EAN_CODES['C'][d];
+            }
+            code += '101'; // Edge
+            return code;
+        }
+
+        // --- UI & Controls ---
+        function syncWeight(val) {
+            val = parseInt(val);
+            document.getElementById('font_weight').value = val;
+            let name = 'Regular (' + val + ')';
+            if (val <= 250) name = 'Ultra Slim (' + val + ')';
+            else if (val <= 350) name = 'Slim (' + val + ')';
+            else if (val <= 450) name = 'Regular (' + val + ')';
+            else if (val <= 580) name = 'Medium (' + val + ')';
+            else if (val <= 750) name = 'Fat (' + val + ')';
+            else name = 'Ultra Fat (' + val + ')';
+            document.getElementById('weight_badge').innerText = name;
+        }
+
+        function setWeight(val) { syncWeight(val); render(); }
+
+        function syncGuard(val) {
+            val = parseFloat(val);
+            document.getElementById('guard_scale').value = val.toFixed(1);
+            const badge = document.getElementById('guard_badge');
+            if (badge) {
+                if (val <= 1.1) badge.innerText = val.toFixed(1) + 'x (2px Slim)';
+                else if (val <= 1.7) badge.innerText = val.toFixed(1) + 'x (3px Fatter)';
+                else badge.innerText = val.toFixed(1) + 'x (' + Math.round(val * 2) + 'px Bold)';
+            }
+        }
+
+        function setGuard(val) { syncGuard(val); render(); }
+
+        function loadPreset(key) {
+            const p = PRESETS[key];
+            if (!p) return;
+            document.getElementById('sku').value = p.sku;
+            document.getElementById('ean').value = p.ean;
+            document.getElementById('imei1').value = p.imei1;
+            document.getElementById('imei2').value = p.imei2;
+            document.getElementById('eid').value = p.eid;
+            document.getElementById('lot').value = p.lot;
+            render();
+        }
+
+        function randomizeData() {
+            function luhn(str) {
+                let sum = 0;
+                for (let i = 0; i < str.length; i++) {
+                    let d = parseInt(str[i], 10);
+                    if (i % 2 === 1) {
+                        d *= 2;
+                        if (d > 9) d -= 9;
+                    }
+                    sum += d;
+                }
+                return (10 - (sum % 10)) % 10;
+            }
+            let imei1_base = '35448720' + Math.floor(100000 + Math.random() * 900000);
+            let imei1 = imei1_base + luhn(imei1_base);
+            let imei2_base = '35448720' + Math.floor(100000 + Math.random() * 900000);
+            let imei2 = imei2_base + luhn(imei2_base);
+            let eid = '890330234271' + Array.from({length: 20}, () => Math.floor(Math.random() * 10)).join('');
+
+            document.getElementById('imei1').value = imei1;
+            document.getElementById('imei2').value = imei2;
+            document.getElementById('eid').value = eid;
+            render();
+        }
+
+        // --- Main Canvas Renderer ---
+        const DPI = 600;
+        const DPMM = DPI / 25.4;
+
+        function mmToPx(mm) { return Math.round(mm * DPMM); }
+
+        async function render() {
+            const sku = document.getElementById('sku').value.trim();
+            const rawEan = document.getElementById('ean').value.trim();
+            const ean = normalizeEan(rawEan);
+            const imei1 = document.getElementById('imei1').value.trim();
+            const imei2 = document.getElementById('imei2').value.trim();
+            const eid = document.getElementById('eid').value.trim();
+            const lot = document.getElementById('lot').value.trim();
+            const qrOverride = document.getElementById('qr').value.trim();
+            const weight = parseInt(document.getElementById('font_weight').value, 10);
+            const guardScale = parseFloat(document.getElementById('guard_scale').value);
+            const cropMode = document.getElementById('crop_mode').value;
+            const isTransparent = document.getElementById('bg_opt').value === 'transparent';
+
+            // Wait for Work Sans font to load
+            await document.fonts.load(`${weight} 20px "Work Sans"`);
+
+            // Master canvas 70 x 22 mm @ 600 DPI
+            const masterW = mmToPx(70.0);
+            const masterH = mmToPx(22.0);
+
+            const mCanvas = document.createElement('canvas');
+            mCanvas.width = masterW;
+            mCanvas.height = masterH;
+            const ctx = mCanvas.getContext('2d');
+
+            if (!isTransparent) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, masterW, masterH);
+            }
+
+            ctx.fillStyle = '#000000';
+
+            // Unified Optical Left Margin = 1.89mm (45px at 600 DPI)
+            const leftXPx = mmToPx(1.89);
+
+            // 1. Row 1 - Left: EAN-13 Barcode
+            // Bars: x=2.97mm, y=2.03mm, w=15.27mm, h=2.84mm (+0.81mm guard drop)
+            const eanBits = encodeEan13(ean);
+            const eanX0 = mmToPx(2.97);
+            const eanY0 = mmToPx(2.03);
+            const eanW = 15.27;
+            const eanModW = (eanW * DPMM) / eanBits.length;
+            const eanHNorm = mmToPx(2.84);
+            const eanHGuard = mmToPx(2.84 + 0.81);
+            const guardStroke = Math.max(1, Math.round(0.085 * guardScale * DPMM));
+
+            for (let i = 0; i < eanBits.length; i++) {
+                let xCurr = eanX0 + i * eanModW;
+                let xNext = eanX0 + (i + 1) * eanModW;
+                let isGuard = (i < 3) || (i >= 45 && i < 50) || (i >= 92);
+                let hBar = isGuard ? eanHGuard : eanHNorm;
+
+                if (eanBits[i] === '1') {
+                    if (isGuard) {
+                        let gx0, gx1;
+                        if (i === 0) {
+                            gx0 = Math.round(xCurr);
+                            gx1 = gx0 + guardStroke - 1;
+                        } else if (i === 94) {
+                            gx1 = Math.round(xNext) - 1;
+                            gx0 = gx1 - guardStroke + 1;
+                        } else {
+                            let cx = (xCurr + xNext) / 2.0;
+                            gx0 = Math.round(cx - guardStroke / 2.0);
+                            gx1 = gx0 + guardStroke - 1;
+                        }
+                        ctx.fillRect(gx0, eanY0, gx1 - gx0 + 1, hBar);
+                    } else {
+                        ctx.fillRect(Math.round(xCurr), eanY0, Math.round(xNext) - Math.round(xCurr), hBar);
+                    }
+                }
+            }
+
+            // EAN Text: Work Sans, Baseline Y = 6.62mm
+            ctx.font = `${weight} ${mmToPx(1.36)}px "Work Sans", sans-serif`;
+            ctx.textBaseline = 'alphabetic';
+            const baselineY = mmToPx(6.62);
+
+            // Leading digit '0' optically aligned at leftXPx (x=1.89mm)
+            ctx.textAlign = 'left';
+            ctx.fillText(ean[0], leftXPx - 2, baselineY);
+
+            // Left group (6 digits) centered at x0 + 24 * mod_w
+            ctx.textAlign = 'center';
+            ctx.fillText(ean.substring(1, 7), eanX0 + 24.0 * eanModW, baselineY);
+
+            // Right group (6 digits) centered at x0 + 71 * mod_w
+            ctx.fillText(ean.substring(7, 13), eanX0 + 71.0 * eanModW, baselineY);
+
+            // 2. Row 1 - Center: SKU Barcode & Label
+            // Barcode: x=24.58mm, y=2.03mm, w=20.54mm, h=2.84mm
+            const skuBits = encodeCode128(sku);
+            const skuModW = (20.54 * DPMM) / skuBits.length;
+            const skuX0 = mmToPx(24.58);
+            for (let i = 0; i < skuBits.length; i++) {
+                if (skuBits[i] === '1') {
+                    let bx0 = Math.round(skuX0 + i * skuModW);
+                    let bx1 = Math.round(skuX0 + (i + 1) * skuModW);
+                    ctx.fillRect(bx0, eanY0, bx1 - bx0, eanHNorm);
+                }
+            }
+
+            // SKU Text: Baseline Y = 6.62mm, flush at X = 24.60mm
+            ctx.textAlign = 'left';
+            ctx.font = `${weight} ${mmToPx(1.44)}px "Work Sans", sans-serif`;
+            ctx.fillText(`SKU: ${sku}`, mmToPx(24.60), baselineY);
+
+            // 3. Row 1 - Right: Lot Code (x=56.76mm, baseline Y=2.97mm)
+            if (lot) {
+                ctx.fillText(lot, mmToPx(56.76), mmToPx(2.97));
+            }
+
+            // 4. Right Side: Activation QR Code (10.95x10.95mm at x=56.80mm, y=8.78mm)
+            const qrText = qrOverride ? qrOverride : `https://da.app.google/${imei1}      `;
+            const qrTemp = document.getElementById('qr_temp');
+            qrTemp.innerHTML = '';
+            const qrcodeObj = new QRCode(qrTemp, {
+                text: qrText,
+                width: 256,
+                height: 256,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            // Wait brief tick for QR image generation
+            await new Promise(r => setTimeout(r, 20));
+            const qrImg = qrTemp.querySelector('canvas') || qrTemp.querySelector('img');
+            if (qrImg) {
+                const qrSizePx = mmToPx(10.95);
+                ctx.drawImage(qrImg, mmToPx(56.80), mmToPx(8.78), qrSizePx, qrSizePx);
+            }
+
+            // 5. Row 2: IMEI1 Barcode & Text
+            // Barcode: x=1.89mm, y=7.57mm, w=32.30mm, h=2.84mm
+            const imeiBits = encodeCode128(imei1);
+            const imeiModW = (32.30 * DPMM) / imeiBits.length;
+            const imeiY0 = mmToPx(7.57);
+            for (let i = 0; i < imeiBits.length; i++) {
+                if (imeiBits[i] === '1') {
+                    let bx0 = Math.round(leftXPx + i * imeiModW);
+                    let bx1 = Math.round(leftXPx + (i + 1) * imeiModW);
+                    ctx.fillRect(bx0, imeiY0, bx1 - bx0, eanHNorm);
+                }
+            }
+
+            // IMEI Text: Baseline Y = 12.43mm, optical left alignment at leftXPx
+            // NO space after IMEI2: per user request!
+            const imeiText = imei2 ? `IMEI1: ${imei1} / IMEI2:${imei2}` : `IMEI: ${imei1}`;
+            ctx.font = `${Math.min(weight, 420)} ${mmToPx(1.44)}px "Work Sans", sans-serif`;
+            ctx.fillText(imeiText, leftXPx - 3, mmToPx(12.43));
+
+            // 6. Row 3: eID Barcode & Text
+            // Barcode: x=1.89mm, y=13.65mm, w=42.84mm, h=2.97mm
+            if (eid) {
+                const eidBits = encodeCode128(eid);
+                const eidModW = (42.84 * DPMM) / eidBits.length;
+                const eidY0 = mmToPx(13.65);
+                const eidH = mmToPx(2.97);
+                for (let i = 0; i < eidBits.length; i++) {
+                    if (eidBits[i] === '1') {
+                        let bx0 = Math.round(leftXPx + i * eidModW);
+                        let bx1 = Math.round(leftXPx + (i + 1) * eidModW);
+                        ctx.fillRect(bx0, eidY0, bx1 - bx0, eidH);
+                    }
+                }
+
+                // eID Text: Baseline Y = 19.19mm, optical left alignment at leftXPx
+                ctx.fillText(`eID: ${eid}`, leftXPx - 2, mmToPx(19.19));
+            }
+
+            // Display on preview canvas (crop mode handling)
+            const pCanvas = document.getElementById('previewCanvas');
+            if (cropMode === 'border_bounds') {
+                const bx0 = mmToPx((70.0 - 67.0) / 2.0);
+                const by0 = mmToPx((22.0 - 20.0) / 2.0);
+                const bw = mmToPx(67.0);
+                const bh = mmToPx(20.0);
+
+                pCanvas.width = bw;
+                pCanvas.height = bh;
+                const pCtx = pCanvas.getContext('2d');
+                pCtx.clearRect(0, 0, bw, bh);
+                pCtx.drawImage(mCanvas, bx0, by0, bw, bh, 0, 0, bw, bh);
+            } else {
+                pCanvas.width = masterW;
+                pCanvas.height = masterH;
+                const pCtx = pCanvas.getContext('2d');
+                pCtx.clearRect(0, 0, masterW, masterH);
+                pCtx.drawImage(mCanvas, 0, 0);
+            }
+        }
+
+        // --- Downloads ---
+        function downloadPng(mode) {
+            const oldMode = document.getElementById('crop_mode').value;
+            document.getElementById('crop_mode').value = mode;
+            render().then(() => {
+                const pCanvas = document.getElementById('previewCanvas');
+                pCanvas.toBlob((blob) => {
+                    const sku = document.getElementById('sku').value.trim();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `pixel_${sku}_${mode === 'border_bounds' ? '67x20mm' : '70x22mm'}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    document.getElementById('crop_mode').value = oldMode;
+                    render();
+                }, 'image/png');
+            });
+        }
+
+        function downloadPdf() {
+            const cropMode = document.getElementById('crop_mode').value;
+            const w_mm = cropMode === 'border_bounds' ? 67.0 : 70.0;
+            const h_mm = cropMode === 'border_bounds' ? 20.0 : 22.0;
+
+            const pCanvas = document.getElementById('previewCanvas');
+            const dataUrl = pCanvas.toDataURL('image/png');
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: [h_mm, w_mm]
+            });
+
+            pdf.addImage(dataUrl, 'PNG', 0, 0, w_mm, h_mm);
+            const sku = document.getElementById('sku').value.trim();
+            pdf.save(`pixel_${sku}_${cropMode}.pdf`);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            render();
+        });
+    </script>
+</body>
+</html>
