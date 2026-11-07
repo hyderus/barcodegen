@@ -615,7 +615,7 @@
                 ctx.fillText(lot, mmToPx(56.76), mmToPx(2.97));
             }
 
-            // 4. Right Side: Activation QR Code (10.95x10.95mm at x=56.80mm, y=8.78mm)
+            // 4. Right Side: Activation QR Code (9.60x9.60mm at x=56.80mm, y=8.95mm)
             const qrText = qrOverride ? qrOverride : `https://da.app.google/${imei1}      `;
             const qrTemp = document.getElementById('qr_temp');
             qrTemp.innerHTML = '';
@@ -630,8 +630,8 @@
             await new Promise(r => setTimeout(r, 20));
             const qrImg = qrTemp.querySelector('canvas') || qrTemp.querySelector('img');
             if (qrImg) {
-                const qrSizePx = mmToPx(10.95);
-                ctx.drawImage(qrImg, mmToPx(56.80), mmToPx(8.78), qrSizePx, qrSizePx);
+                const qrSizePx = mmToPx(9.60);
+                ctx.drawImage(qrImg, mmToPx(56.80), mmToPx(8.95), qrSizePx, qrSizePx);
             }
 
             // 5. Row 2: IMEI1 Barcode & Text
